@@ -31,6 +31,8 @@ export function initControls(
   const stageEl = document.getElementById('stage') as HTMLElement;
   const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
   const exportCancelBtn = document.getElementById('export-cancel-btn') as HTMLButtonElement;
+  const exportOverlay = document.getElementById('export-overlay') as HTMLElement;
+  const exportOverlayText = document.getElementById('export-overlay-text') as HTMLElement;
 
   const createExporter = deps.createExporter ?? ((config: CanvasConfig) => new CanvasExporter(config));
 
@@ -98,6 +100,7 @@ export function initControls(
     seekBar.disabled = locked;
     exportBtn.disabled = locked || !layer;
     exportCancelBtn.hidden = !locked;
+    exportOverlay.hidden = !locked;
   }
 
   /**
@@ -288,11 +291,13 @@ export function initControls(
     exportAbortController = new AbortController();
     const exporter = createExporter(canvasController.config);
 
-    /** エクスポート中のtimeupdateイベントリスナ。エクスポートボタンの文言を進捗表示に更新する */
+    /** エクスポート中のtimeupdateイベントリスナ。エクスポートボタンとオーバーレイの文言を進捗表示に更新する */
     const onProgress = () => {
       const current = formatTime(activeLayer.videoEl.currentTime);
       const duration = formatTime(activeLayer.videoEl.duration);
-      exportBtn.textContent = `エクスポート中... ${current} / ${duration}`;
+      const progressText = `エクスポート中... ${current} / ${duration}`;
+      exportBtn.textContent = progressText;
+      exportOverlayText.textContent = progressText;
     };
     activeLayer.videoEl.addEventListener('timeupdate', onProgress);
 
@@ -308,6 +313,7 @@ export function initControls(
       isExporting = false;
       exportAbortController = null;
       exportBtn.textContent = 'エクスポート';
+      exportOverlayText.textContent = 'エクスポート中...';
       setExportLock(false);
     }
   });
