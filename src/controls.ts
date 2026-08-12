@@ -130,8 +130,13 @@ export function initControls(canvasController: CanvasController): void {
     stageEl.classList.add('drag-over');
   });
 
-  /** ステージからのdragleaveイベントリスナ。ステージ外に出たらハイライト表示を解除する */
-  stageEl.addEventListener('dragleave', () => {
+  /**
+   * ステージからのdragleaveイベントリスナ。ステージ外に出たらハイライト表示を解除する。
+   * ステージ内の子要素(動画など)をまたいだ移動でもdragleaveはバブルして発火するため、
+   * 移動先(relatedTarget)がステージの子孫であれば「まだステージ内にいる」とみなして無視する。
+   */
+  stageEl.addEventListener('dragleave', (e: DragEvent) => {
+    if (stageEl.contains(e.relatedTarget as Node)) return;
     stageEl.classList.remove('drag-over');
   });
 
