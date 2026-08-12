@@ -18,10 +18,10 @@ export interface VideoLayerModel {
   fitMode: FitMode;
   naturalWidth: number; // 動画本来の解像度(loadedmetadata取得後にセット)
   naturalHeight: number;
+  muted: boolean; // 既定true(ミュート)。UIから切り替え可能
 
   // 今回UIには出さないが、将来拡張のためモデルには保持
   opacity: number; // 既定1
   trimStart: number; // 再生開始位置(秒) 既定0
   playbackRate: number; // 既定1
-  muted: boolean; // 既定false
 }

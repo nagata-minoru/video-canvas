@@ -33,6 +33,7 @@ function setupDom(): {
     <input id="pos-x" type="number" value="0" />
     <input id="pos-y" type="number" value="0" />
     <button id="play-pause" type="button">再生</button>
+    <input id="mute-toggle" type="checkbox" checked />
     <span id="time-display"></span>
     <input id="seek" type="range" value="0" />
     <button id="export-btn" type="button" disabled>エクスポート</button>

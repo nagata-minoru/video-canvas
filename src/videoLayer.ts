@@ -38,7 +38,7 @@ export class VideoLayer {
       opacity: 1,
       trimStart: 0,
       playbackRate: 1,
-      muted: false,
+      muted: true,
     };
 
     this.videoEl.style.opacity = String(this.model.opacity);
@@ -111,6 +111,15 @@ export class VideoLayer {
   setScale(scale: number): void {
     this.model.scale = scale;
     this.render();
+  }
+
+  /**
+   * 前景動画の音声ミュート状態を設定する(背面用<video>は音声二重再生防止のため常時ミュート固定で対象外)。
+   * @param muted trueでミュート、falseでミュート解除
+   */
+  setMuted(muted: boolean): void {
+    this.model.muted = muted;
+    this.videoEl.muted = muted;
   }
 
   /** 動画が一時停止中なら再生、再生中なら一時停止する(背面用<video>も同期して再生・一時停止する) */

@@ -74,6 +74,27 @@ describe('VideoLayer', () => {
     expect(layer.bgVideoEl.currentTime).toBe(12.5);
   });
 
+  it('既定でmodel.muted/videoEl.mutedはtrue(ミュート)である', () => {
+    const layer = new VideoLayer({ w: 1080, h: 608 });
+
+    expect(layer.model.muted).toBe(true);
+    expect(layer.videoEl.muted).toBe(true);
+  });
+
+  it('setMuted()でmodel.mutedとvideoEl.mutedが更新され、bgVideoEl.mutedは常にtrueのまま変化しない', () => {
+    const layer = new VideoLayer({ w: 1080, h: 608 });
+
+    layer.setMuted(false);
+    expect(layer.model.muted).toBe(false);
+    expect(layer.videoEl.muted).toBe(false);
+    expect(layer.bgVideoEl.muted).toBe(true);
+
+    layer.setMuted(true);
+    expect(layer.model.muted).toBe(true);
+    expect(layer.videoEl.muted).toBe(true);
+    expect(layer.bgVideoEl.muted).toBe(true);
+  });
+
   it('destroy()で前景・背面両方の<video>要素がDOMから取り除かれる', () => {
     const layer = new VideoLayer({ w: 1080, h: 608 });
     document.body.appendChild(layer.videoEl);

@@ -26,6 +26,7 @@ export function initControls(
   const posXInput = document.getElementById('pos-x') as HTMLInputElement;
   const posYInput = document.getElementById('pos-y') as HTMLInputElement;
   const playPauseBtn = document.getElementById('play-pause') as HTMLButtonElement;
+  const muteToggle = document.getElementById('mute-toggle') as HTMLInputElement;
   const timeDisplay = document.getElementById('time-display') as HTMLSpanElement;
   const seekBar = document.getElementById('seek') as HTMLInputElement;
   const stageEl = document.getElementById('stage') as HTMLElement;
@@ -163,6 +164,7 @@ export function initControls(
     layer = new VideoLayer({ w: canvasController.config.width, h: canvasController.config.height });
     layer.onModelChange = syncLayerInputs;
     layer.setFitMode(fitModeSelect.value as FitMode);
+    layer.setMuted(muteToggle.checked);
     canvasFrameEl.insertBefore(layer.bgVideoEl, canvasController.el);
     canvasController.el.appendChild(layer.videoEl);
     /** 動画要素のドラッグ移動コールバック。ドラッグ量(dx, dy)を現在位置に加算して新しい位置を設定する */
@@ -270,6 +272,11 @@ export function initControls(
   /** 再生/一時停止ボタンのclickイベントリスナ。動画レイヤーの再生状態をトグルする */
   playPauseBtn.addEventListener('click', () => {
     layer?.togglePlay();
+  });
+
+  /** ミュートトグルのchangeイベントリスナ。動画レイヤーの音声ミュート状態を更新する */
+  muteToggle.addEventListener('change', () => {
+    layer?.setMuted(muteToggle.checked);
   });
 
   /** シークバーのinputイベントリスナ(ドラッグ中)。isSeekingを立てて時間表示だけをプレビュー更新し、動画本体はまだシークしない */

@@ -55,7 +55,7 @@ export class CanvasExporter {
   /**
    * 動画レイヤーの現在の演出(位置・サイズ・拡大率)をリアルタイムに反映しながらMP4(対応環境)またはWebMとして録画する。
    * 動画を最初から最後まで実時間で再生し直すため、動画の長さと同じだけ時間がかかる。
-   * @param videoEl 録画元の<video>要素(再生とキャンバス描画の両方に使う)
+   * @param videoEl 録画元の<video>要素(再生とキャンバス描画の両方に使う)。mutedがtrueの場合は音声トラックを含めずに録画する
    * @param getBox 現在のフレームで使う配置ボックス(scale適用前のx,y,width,height)とscaleを返すコールバック
    * @param signal 呼び出し側から中断するためのAbortSignal(キャンセル用)
    * @returns 録画完了後にBlob(MP4またはWebM)を解決するPromise。非対応環境やエラー・中断時はreject
@@ -74,8 +74,10 @@ export class CanvasExporter {
       }
 
       const canvasStream = this.canvas.captureStream(30);
-      const audioTracks = videoEl.captureStream().getAudioTracks();
-      audioTracks.forEach((track) => canvasStream.addTrack(track));
+      if (!videoEl.muted) {
+        const audioTracks = videoEl.captureStream().getAudioTracks();
+        audioTracks.forEach((track) => canvasStream.addTrack(track));
+      }
 
       const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 8_000_000 });
       const chunks: BlobPart[] = [];
