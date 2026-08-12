@@ -26,6 +26,9 @@ function setupDom(): { stageEl: HTMLElement; canvasEl: HTMLElement } {
     <input id="seek" type="range" value="0" />
     <button id="export-btn" type="button" disabled>エクスポート</button>
     <button id="export-cancel-btn" type="button" hidden>キャンセル</button>
+    <div id="export-overlay" hidden>
+      <p id="export-overlay-text"></p>
+    </div>
     <section id="stage">
       <div id="canvas"></div>
     </section>

@@ -14,6 +14,7 @@ function setupDom(): {
   canvasEl: HTMLElement;
   exportBtn: HTMLButtonElement;
   exportCancelBtn: HTMLButtonElement;
+  exportOverlay: HTMLElement;
   fileInput: HTMLInputElement;
   canvasWidthInput: HTMLInputElement;
   canvasHeightInput: HTMLInputElement;
@@ -39,6 +40,9 @@ function setupDom(): {
     <input id="seek" type="range" value="0" />
     <button id="export-btn" type="button" disabled>エクスポート</button>
     <button id="export-cancel-btn" type="button" hidden>キャンセル</button>
+    <div id="export-overlay" hidden>
+      <p id="export-overlay-text"></p>
+    </div>
     <section id="stage">
       <div id="canvas"></div>
     </section>
@@ -48,6 +52,7 @@ function setupDom(): {
     canvasEl: document.getElementById('canvas') as HTMLElement,
     exportBtn: document.getElementById('export-btn') as HTMLButtonElement,
     exportCancelBtn: document.getElementById('export-cancel-btn') as HTMLButtonElement,
+    exportOverlay: document.getElementById('export-overlay') as HTMLElement,
     fileInput: document.getElementById('file-input') as HTMLInputElement,
     canvasWidthInput: document.getElementById('canvas-width') as HTMLInputElement,
     canvasHeightInput: document.getElementById('canvas-height') as HTMLInputElement,
@@ -146,12 +151,13 @@ describe('エクスポート機能', () => {
     expect(exportBtn.disabled).toBe(false);
   });
 
-  it('エクスポート開始で関連コントロールが一括disabledになり、キャンセルボタンが表示される', () => {
+  it('エクスポート開始で関連コントロールが一括disabledになり、キャンセルボタンとオーバーレイが表示される', () => {
     const {
       stageEl,
       canvasEl,
       exportBtn,
       exportCancelBtn,
+      exportOverlay,
       fileInput,
       canvasWidthInput,
       canvasHeightInput,
@@ -172,10 +178,11 @@ describe('エクスポート機能', () => {
     expect(seekBar.disabled).toBe(true);
     expect(exportBtn.disabled).toBe(true);
     expect(exportCancelBtn.hidden).toBe(false);
+    expect(exportOverlay.hidden).toBe(false);
   });
 
-  it('エクスポート完了(resolve)後はロックが解除され、ダウンロードが発生する', async () => {
-    const { stageEl, canvasEl, exportBtn, exportCancelBtn, fileInput } = setupDom();
+  it('エクスポート完了(resolve)後はロックが解除され、オーバーレイが非表示になり、ダウンロードが発生する', async () => {
+    const { stageEl, canvasEl, exportBtn, exportCancelBtn, exportOverlay, fileInput } = setupDom();
     const canvasController = new CanvasController(canvasEl, { width: 1080, height: 608 });
     const fake = createFakeExporter();
     initControls(canvasController, { createExporter: fake.createExporter });
@@ -190,6 +197,7 @@ describe('エクスポート機能', () => {
     expect(exportBtn.disabled).toBe(false);
     expect(exportBtn.textContent).toBe('エクスポート');
     expect(exportCancelBtn.hidden).toBe(true);
+    expect(exportOverlay.hidden).toBe(true);
   });
 
   it('エクスポート失敗(reject、AbortError以外)時はalertが呼ばれ、ロックが解除される', async () => {
