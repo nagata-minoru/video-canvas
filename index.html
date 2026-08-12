@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Canvas</title>
+  </head>
+  <body>
+    <div id="app">
+      <section class="panel panel-top">
+        <label class="field"
+          >キャンバス
+          <span class="size-inputs">
+            <input id="canvas-width" type="number" value="1080" min="1" />
+            ×
+            <input id="canvas-height" type="number" value="608" min="1" />
+          </span>
+        </label>
+
+        <label class="field file-field">
+          動画を追加
+          <input id="file-input" type="file" accept="video/*" hidden />
+        </label>
+
+        <label class="field">
+          Fit
+          <select id="fit-mode">
+            <option value="cover">Cover</option>
+            <option value="contain">Contain</option>
+            <option value="custom">原寸(Custom)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          Scale
+          <input id="scale-range" type="range" min="0.1" max="5" step="0.01" value="1" />
+          <input id="scale-number" type="number" min="0.1" max="5" step="0.01" value="1" />
+        </label>
+
+        <label class="field"
+          >X <input id="pos-x" type="number" step="1" value="0" />
+        </label>
+        <label class="field"
+          >Y <input id="pos-y" type="number" step="1" value="0" />
+        </label>
+      </section>
+
+      <section class="stage">
+        <div id="canvas"></div>
+      </section>
+
+      <section class="panel panel-playback">
+        <button id="play-pause" type="button">▶</button>
+        <span id="time-display">00:00 / 00:00</span>
+        <input id="seek" type="range" min="0" max="0" step="0.01" value="0" />
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
