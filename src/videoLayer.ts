@@ -4,6 +4,8 @@ import { computeFitBox, type Size } from './fit';
 /** キャンバス内に配置される動画素材1つ分の状態(VideoLayerModel)と<video>要素への描画を管理するクラス */
 export class VideoLayer {
   readonly videoEl: HTMLVideoElement;
+  /** キャンバス外へのはみ出し部分をグレースケールで表示するための背面用<video>要素。常時ミュートで前景と同期再生する */
+  readonly bgVideoEl: HTMLVideoElement;
   model: VideoLayerModel;
   /** モデル(位置・サイズ・スケール等)が更新され再描画されるたびに呼ばれるコールバック。UI側の数値入力同期に使う */
   onModelChange: (() => void) | null = null;
@@ -18,6 +20,10 @@ export class VideoLayer {
     this.canvasSize = canvasSize;
     this.videoEl = document.createElement('video');
     this.videoEl.playsInline = true;
+
+    this.bgVideoEl = document.createElement('video');
+    this.bgVideoEl.playsInline = true;
+    this.bgVideoEl.muted = true;
 
     this.model = {
       id: crypto.randomUUID(),
@@ -38,6 +44,9 @@ export class VideoLayer {
     this.videoEl.style.opacity = String(this.model.opacity);
     this.videoEl.playbackRate = this.model.playbackRate;
     this.videoEl.muted = this.model.muted;
+
+    this.bgVideoEl.style.opacity = String(this.model.opacity);
+    this.bgVideoEl.playbackRate = this.model.playbackRate;
   }
 
   /**
@@ -49,13 +58,17 @@ export class VideoLayer {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = URL.createObjectURL(file);
     this.videoEl.src = this.objectUrl;
+    this.bgVideoEl.src = this.objectUrl;
     /** loadedmetadataイベントのハンドラ。動画本来の解像度を取得し、開始位置を適用してフィットを再計算する */
     this.videoEl.addEventListener(
       'loadedmetadata',
       () => {
         this.model.naturalWidth = this.videoEl.videoWidth;
         this.model.naturalHeight = this.videoEl.videoHeight;
-        if (this.model.trimStart > 0) this.videoEl.currentTime = this.model.trimStart;
+        if (this.model.trimStart > 0) {
+          this.videoEl.currentTime = this.model.trimStart;
+          this.bgVideoEl.currentTime = this.model.trimStart;
+        }
         this.resetToFit();
       },
       { once: true },
@@ -100,24 +113,31 @@ export class VideoLayer {
     this.render();
   }
 
-  /** 動画が一時停止中なら再生、再生中なら一時停止する */
+  /** 動画が一時停止中なら再生、再生中なら一時停止する(背面用<video>も同期して再生・一時停止する) */
   togglePlay(): void {
-    if (this.videoEl.paused) this.videoEl.play();
-    else this.videoEl.pause();
+    if (this.videoEl.paused) {
+      this.videoEl.play();
+      this.bgVideoEl.play();
+    } else {
+      this.videoEl.pause();
+      this.bgVideoEl.pause();
+    }
   }
 
   /**
-   * 動画の再生位置を指定秒数へ移動する。
+   * 動画の再生位置を指定秒数へ移動する(背面用<video>も同じ位置へ移動する)。
    * @param seconds 移動先の再生位置(秒)
    */
   seekTo(seconds: number): void {
     this.videoEl.currentTime = seconds;
+    this.bgVideoEl.currentTime = seconds;
   }
 
-  /** Object URLを解放し、<video>要素をDOMから取り除く(動画差し替え・破棄時に呼ぶ) */
+  /** Object URLを解放し、前景・背面の<video>要素をDOMから取り除く(動画差し替え・破棄時に呼ぶ) */
   destroy(): void {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.videoEl.remove();
+    this.bgVideoEl.remove();
   }
 
   /**
@@ -139,14 +159,16 @@ export class VideoLayer {
     this.render();
   }
 
-  /** モデルの現在値(位置・サイズ・拡大率)を<video>要素のスタイルへ反映し、onModelChangeコールバックを呼び出す */
+  /** モデルの現在値(位置・サイズ・拡大率)を前景・背面両方の<video>要素のスタイルへ反映し、onModelChangeコールバックを呼び出す */
   private render(): void {
     const { x, y, width, height, scale } = this.model;
-    this.videoEl.style.left = `${x}px`;
-    this.videoEl.style.top = `${y}px`;
-    this.videoEl.style.width = `${width}px`;
-    this.videoEl.style.height = `${height}px`;
-    this.videoEl.style.transform = `scale(${scale})`;
+    for (const el of [this.videoEl, this.bgVideoEl]) {
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.width = `${width}px`;
+      el.style.height = `${height}px`;
+      el.style.transform = `scale(${scale})`;
+    }
     this.onModelChange?.();
   }
 }

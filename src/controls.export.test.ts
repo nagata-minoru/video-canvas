@@ -44,7 +44,9 @@ function setupDom(): {
       <p id="export-overlay-text"></p>
     </div>
     <section id="stage">
-      <div id="canvas"></div>
+      <div class="canvas-frame" id="canvas-frame">
+        <div id="canvas"></div>
+      </div>
     </section>
   `;
   return {
