@@ -85,7 +85,7 @@ src/
 ├── fit.ts             純粋関数: cover/contain/custom のボックス計算・中心基準スケール計算ロジック
 ├── videoLayer.ts      VideoLayer クラス: <video> 要素の生成・状態保持・再生制御・transform適用
 ├── drag.ts            attachDrag(): Pointer Events による汎用ドラッグヘルパー
-├── exporter.ts         CanvasExporter クラス: captureStream + MediaRecorder によるMP4/WebM書き出し(ブラウザの対応状況に応じ自動選択)
+├── exporter.ts         CanvasExporter クラス: captureStream + MediaRecorder によるMP4/WebM自動選択書き出し
 └── controls.ts        全UIコントロールとモデル/DOMの結線
 ```
 
