@@ -23,6 +23,7 @@ function setupDom(): {
   document.body.innerHTML = `
     <input id="canvas-width" type="number" value="1080" />
     <input id="canvas-height" type="number" value="608" />
+    <select id="canvas-preset"></select>
     <input id="file-input" type="file" />
     <select id="fit-mode">
       <option value="cover">Cover</option>
