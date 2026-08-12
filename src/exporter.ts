@@ -2,8 +2,15 @@ import type { Box } from './fit';
 import { computeCenterScaledBox } from './fit';
 import type { CanvasConfig } from './types';
 
-/** 書き出しに使うWebMのMIMEタイプ候補。優先順に並べる(vp9/opus > vp8/opus > コーデック指定なし) */
-const MIME_CANDIDATES = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+/** 書き出しに使うMIMEタイプ候補。優先順に並べる。
+ *  対応ブラウザ(Chrome・Safari)ではMP4(H.264+AAC)を優先し、非対応環境ではWebM(VP9/VP8+Opus)にフォールバックする */
+export const MIME_CANDIDATES = [
+  'video/mp4;codecs=avc1,mp4a.40.2',
+  'video/mp4',
+  'video/webm;codecs=vp9,opus',
+  'video/webm;codecs=vp8,opus',
+  'video/webm',
+];
 
 /**
  * 候補のMIMEタイプを優先順に試し、MediaRecorderがサポートする最初の1つを返す。
@@ -18,7 +25,17 @@ export function pickSupportedMimeType(
   return candidates.find((candidate) => isSupported(candidate)) ?? null;
 }
 
-/** キャンバス上の動画演出をWebM(音声つき)として録画・書き出すクラス */
+/**
+ * MIMEタイプ文字列から、ダウンロードファイルに付与する拡張子を決定する。
+ * blob.type には record() で実際に選ばれたMIMEタイプがそのまま反映される。
+ * @param mimeType 判定対象のMIMEタイプ文字列(例: 'video/mp4;codecs=avc1,mp4a.40.2')
+ * @returns 'mp4' または 'webm'(video/mp4系以外は既定でwebm)
+ */
+export function extensionForMimeType(mimeType: string): 'mp4' | 'webm' {
+  return mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+}
+
+/** キャンバス上の動画演出をMP4(対応環境)またはWebM(音声つき)として録画・書き出すクラス */
 export class CanvasExporter {
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
@@ -36,12 +53,12 @@ export class CanvasExporter {
   }
 
   /**
-   * 動画レイヤーの現在の演出(位置・サイズ・拡大率)をリアルタイムに反映しながらWebM動画として録画する。
+   * 動画レイヤーの現在の演出(位置・サイズ・拡大率)をリアルタイムに反映しながらMP4(対応環境)またはWebMとして録画する。
    * 動画を最初から最後まで実時間で再生し直すため、動画の長さと同じだけ時間がかかる。
    * @param videoEl 録画元の<video>要素(再生とキャンバス描画の両方に使う)
    * @param getBox 現在のフレームで使う配置ボックス(scale適用前のx,y,width,height)とscaleを返すコールバック
    * @param signal 呼び出し側から中断するためのAbortSignal(キャンセル用)
-   * @returns 録画完了後にBlob(WebM)を解決するPromise。非対応環境やエラー・中断時はreject
+   * @returns 録画完了後にBlob(MP4またはWebM)を解決するPromise。非対応環境やエラー・中断時はreject
    */
   record(videoEl: HTMLVideoElement, getBox: () => Box & { scale: number }, signal?: AbortSignal): Promise<Blob> {
     return new Promise((resolve, reject) => {
