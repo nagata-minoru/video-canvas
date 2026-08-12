@@ -255,7 +255,9 @@ export function initControls(
 
     /** エクスポート中のtimeupdateイベントリスナ。エクスポートボタンの文言を進捗表示に更新する */
     const onProgress = () => {
-      exportBtn.textContent = `エクスポート中... ${formatTime(activeLayer.videoEl.currentTime)} / ${formatTime(activeLayer.videoEl.duration)}`;
+      const current = formatTime(activeLayer.videoEl.currentTime);
+      const duration = formatTime(activeLayer.videoEl.duration);
+      exportBtn.textContent = `エクスポート中... ${current} / ${duration}`;
     };
     activeLayer.videoEl.addEventListener('timeupdate', onProgress);
 
