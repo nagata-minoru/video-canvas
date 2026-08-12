@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeContainBox, computeCoverBox, computeCustomBox, computeFitBox } from './fit';
+import { computeCenterScaledBox, computeContainBox, computeCoverBox, computeCustomBox, computeFitBox } from './fit';
 
 describe('computeCoverBox', () => {
   it('横長の動画を縦長キャンバスに合わせると、高さ基準で拡大されキャンバス幅からはみ出す', () => {
@@ -35,6 +35,20 @@ describe('computeCustomBox', () => {
   it('動画を原寸のままキャンバス中央に配置する', () => {
     const box = computeCustomBox({ w: 400, h: 300 }, { w: 1080, h: 608 });
     expect(box).toEqual({ x: (1080 - 400) / 2, y: (608 - 300) / 2, width: 400, height: 300 });
+  });
+});
+
+describe('computeCenterScaledBox', () => {
+  it('scale=1では元のボックスと変化しない', () => {
+    const box = computeCenterScaledBox({ x: 10, y: 20, width: 100, height: 50 }, 1);
+    expect(box).toEqual({ x: 10, y: 20, width: 100, height: 50 });
+  });
+
+  it('scale=2では中心を軸に拡大され、幅・高さが2倍になる', () => {
+    const box = computeCenterScaledBox({ x: 10, y: 20, width: 100, height: 50 }, 2);
+    expect(box).toEqual({ x: 10 + 100 / 2 - 200 / 2, y: 20 + 50 / 2 - 100 / 2, width: 200, height: 100 });
+    expect(box.x).toBeCloseTo(-40);
+    expect(box.y).toBeCloseTo(-5);
   });
 });
 

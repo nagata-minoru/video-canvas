@@ -97,3 +97,12 @@ body {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#export-cancel-btn {
+  color: #e05252;
+}

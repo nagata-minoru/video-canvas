@@ -50,7 +50,7 @@ npm run preview
 npm run test
 ```
 
-[Vitest](https://vitest.dev/) を使用しています。`fit.ts` / `formatTime.ts` の純粋関数、および `controls.ts` のドラッグ&ドロップ時のハイライト表示ロジックをテストしています。
+[Vitest](https://vitest.dev/) を使用しています。`fit.ts` / `formatTime.ts` / `exporter.ts` の純粋関数、および `controls.ts` のドラッグ&ドロップ・エクスポート時のUI状態遷移ロジックをテストしています。`captureStream` / `MediaRecorder` を使った実際の動画生成部分はjsdomでは検証できないため、ブラウザでの手動確認に委ねています。
 
 ## 使い方
 
@@ -59,7 +59,16 @@ npm run test
 3. Fit で `Cover` / `Contain` / `原寸(Custom)` を切り替え、動画のキャンバスへの配置方法を選びます。
 4. キャンバス内の動画をドラッグすると位置を移動できます。Scale のスライダー・数値入力で拡大率を調整できます（中心を軸に拡大縮小されます）。
 5. 下部の再生ボタン・シークバーで動画の再生・一時停止・シークができます。
-6. 仕上がったキャンバス領域を OBS のブラウザソースや画面収録機能でキャプチャし、動画素材として書き出します。
+6. 仕上がったキャンバス領域を OBS のブラウザソースや画面収録機能でキャプチャするか、「エクスポート」ボタンからブラウザ内で直接 WebM 動画として書き出せます。
+
+### エクスポート機能について
+
+「エクスポート」ボタンをクリックすると、動画を最初から最後まで自動再生しながらキャンバス上の見た目(クロップ・位置・拡大率)をそのまま WebM 動画(音声つき)として録画し、完了後に自動でダウンロードします。
+
+- ブラウザ標準の `HTMLCanvasElement.captureStream()` + `MediaRecorder` のみで実現しており、外部ライブラリは使用していません。
+- 動画の実尺と同じだけ録画に時間がかかります(早送りはできません)。
+- 録画中は動画の追加・キャンバスサイズ変更・再生操作・シークができません(座標系のズレや録画のハングを防ぐため)。「キャンセル」ボタンでいつでも中断できます。
+- Chrome・Firefox など主要なブラウザで動作します。`HTMLMediaElement.captureStream()` に対応していないブラウザ(Safari の一部バージョンなど)ではエラーメッセージが表示されます。
 
 ## ファイル構成
 
@@ -68,10 +77,12 @@ src/
 ├── main.ts          エントリーポイント。DOM取得と各モジュールの初期化・結線のみ
 ├── style.css         レイアウト・見た目
 ├── types.ts          CanvasConfig / VideoLayerModel / FitMode の型定義
+├── global.d.ts        DOM標準ライブラリに未収録のAPI(HTMLMediaElement.captureStream)の型補完
 ├── canvas.ts          CanvasController: キャンバス要素のサイズ管理
-├── fit.ts             純粋関数: cover/contain/custom のボックス計算ロジック
+├── fit.ts             純粋関数: cover/contain/custom のボックス計算・中心基準スケール計算ロジック
 ├── videoLayer.ts      VideoLayer クラス: <video> 要素の生成・状態保持・再生制御・transform適用
 ├── drag.ts            attachDrag(): Pointer Events による汎用ドラッグヘルパー
+├── exporter.ts         CanvasExporter クラス: captureStream + MediaRecorder によるWebM書き出し
 └── controls.ts        全UIコントロールとモデル/DOMの結線
 ```
 
@@ -85,6 +96,7 @@ src/
 - 動画素材のドラッグによる X/Y 移動
 - COVER / CONTAIN フィット
 - クロップ表示（`overflow: hidden`）
+- WebM 動画としてのエクスポート（音声つき）
 
 以下は今後追加予定の機能で、現時点では未実装です。
 

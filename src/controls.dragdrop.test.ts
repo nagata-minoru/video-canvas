@@ -23,6 +23,8 @@ function setupDom(): { stageEl: HTMLElement; canvasEl: HTMLElement } {
     <button id="play-pause" type="button">再生</button>
     <span id="time-display"></span>
     <input id="seek" type="range" value="0" />
+    <button id="export-btn" type="button" disabled>エクスポート</button>
+    <button id="export-cancel-btn" type="button" hidden>キャンセル</button>
     <section id="stage">
       <div id="canvas"></div>
     </section>
