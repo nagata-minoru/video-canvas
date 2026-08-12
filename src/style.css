@@ -44,6 +44,15 @@ body {
   width: 4.5em;
 }
 
+.field input[type='number'],
+.field select {
+  background: #1e1e1e;
+  color: inherit;
+  border: 1px solid #666;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
 .file-field {
   cursor: pointer;
   padding: 4px 10px;
@@ -101,8 +110,10 @@ body {
 button:disabled,
 input:disabled,
 select:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  background: #0d0d0d;
+  border-color: #333;
 }
 
 #export-cancel-btn {
