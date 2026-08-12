@@ -131,8 +131,17 @@ describe('エクスポート機能', () => {
   });
 
   it('エクスポート開始で関連コントロールが一括disabledになり、キャンセルボタンが表示される', () => {
-    const { stageEl, canvasEl, exportBtn, exportCancelBtn, fileInput, canvasWidthInput, canvasHeightInput, playPauseBtn, seekBar } =
-      setupDom();
+    const {
+      stageEl,
+      canvasEl,
+      exportBtn,
+      exportCancelBtn,
+      fileInput,
+      canvasWidthInput,
+      canvasHeightInput,
+      playPauseBtn,
+      seekBar,
+    } = setupDom();
     const canvasController = new CanvasController(canvasEl, { width: 1080, height: 608 });
     const fake = createFakeExporter();
     initControls(canvasController, { createExporter: fake.createExporter });
