@@ -102,6 +102,21 @@ function flushAsync(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/**
+ * document.createElementをスパイし、テスト中に生成された<a>要素を後から取得できるようにする。
+ * downloadBlob()はDOMに追加しない<a>要素を生成してclick()するため、生成時点のインスタンスを捕まえる必要がある。
+ */
+function spyOnAnchorCreation(): { getLastAnchor: () => HTMLAnchorElement | undefined } {
+  const spy = vi.spyOn(document, 'createElement');
+  return {
+    getLastAnchor: () =>
+      spy.mock.results
+        .map((r) => r.value)
+        .reverse()
+        .find((el): el is HTMLAnchorElement => el instanceof HTMLAnchorElement),
+  };
+}
+
 describe('エクスポート機能', () => {
   beforeEach(() => {
     vi.stubGlobal('URL', {
@@ -205,6 +220,36 @@ describe('エクスポート機能', () => {
 
     expect(alert).not.toHaveBeenCalled();
     expect(fileInput.disabled).toBe(false);
+  });
+
+  it('MP4のBlobで解決した場合は.mp4拡張子でダウンロードされる', async () => {
+    const { stageEl, canvasEl, exportBtn } = setupDom();
+    const canvasController = new CanvasController(canvasEl, { width: 1080, height: 608 });
+    const fake = createFakeExporter();
+    initControls(canvasController, { createExporter: fake.createExporter });
+    dropVideoFile(stageEl);
+    const { getLastAnchor } = spyOnAnchorCreation();
+
+    exportBtn.click();
+    fake.resolveRecord(new Blob(['dummy'], { type: 'video/mp4;codecs=avc1,mp4a.40.2' }));
+    await flushAsync();
+
+    expect(getLastAnchor()?.download).toMatch(/\.mp4$/);
+  });
+
+  it('WebMのBlobで解決した場合は.webm拡張子でダウンロードされる(フォールバック)', async () => {
+    const { stageEl, canvasEl, exportBtn } = setupDom();
+    const canvasController = new CanvasController(canvasEl, { width: 1080, height: 608 });
+    const fake = createFakeExporter();
+    initControls(canvasController, { createExporter: fake.createExporter });
+    dropVideoFile(stageEl);
+    const { getLastAnchor } = spyOnAnchorCreation();
+
+    exportBtn.click();
+    fake.resolveRecord(new Blob(['dummy'], { type: 'video/webm' }));
+    await flushAsync();
+
+    expect(getLastAnchor()?.download).toMatch(/\.webm$/);
   });
 
   it('キャンセルボタンのクリックでrecord()に渡されたsignalがabortされる', () => {

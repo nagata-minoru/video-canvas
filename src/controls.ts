@@ -2,7 +2,7 @@ import { CanvasController } from './canvas';
 import { VideoLayer } from './videoLayer';
 import { attachDrag } from './drag';
 import { formatTime } from './formatTime';
-import { CanvasExporter } from './exporter';
+import { CanvasExporter, extensionForMimeType } from './exporter';
 import type { CanvasConfig, FitMode } from './types';
 
 /**
@@ -85,15 +85,17 @@ export function initControls(
   }
 
   /**
-   * Blobを日時つきファイル名のWebMファイルとしてダウンロードさせる。
+   * Blobの実際のMIMEタイプ(blob.type)に応じて拡張子(mp4/webm)を切り替えつつ、
+   * 日時つきファイル名でダウンロードさせる。
    * @param blob ダウンロードさせる動画データ
    */
   function downloadBlob(blob: Blob): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
+    const extension = extensionForMimeType(blob.type);
     a.href = url;
-    a.download = `video-canvas-export-${timestamp}.webm`;
+    a.download = `video-canvas-export-${timestamp}.${extension}`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -243,7 +245,7 @@ export function initControls(
     isSeeking = false;
   });
 
-  /** エクスポートボタンのclickイベントリスナ。現在の演出をWebM動画として録画しダウンロードさせる */
+  /** エクスポートボタンのclickイベントリスナ。現在の演出をMP4(対応環境)またはWebMとして録画しダウンロードさせる */
   exportBtn.addEventListener('click', async () => {
     if (!layer || isExporting) return;
     const activeLayer = layer;
