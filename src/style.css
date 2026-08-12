@@ -98,7 +98,9 @@ body {
   white-space: nowrap;
 }
 
-button:disabled {
+button:disabled,
+input:disabled,
+select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
