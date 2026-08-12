@@ -29,6 +29,7 @@ export function initControls(
   const timeDisplay = document.getElementById('time-display') as HTMLSpanElement;
   const seekBar = document.getElementById('seek') as HTMLInputElement;
   const stageEl = document.getElementById('stage') as HTMLElement;
+  const canvasFrameEl = document.getElementById('canvas-frame') as HTMLElement;
   const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
   const exportCancelBtn = document.getElementById('export-cancel-btn') as HTMLButtonElement;
   const exportOverlay = document.getElementById('export-overlay') as HTMLElement;
@@ -162,6 +163,7 @@ export function initControls(
     layer = new VideoLayer({ w: canvasController.config.width, h: canvasController.config.height });
     layer.onModelChange = syncLayerInputs;
     layer.setFitMode(fitModeSelect.value as FitMode);
+    canvasFrameEl.insertBefore(layer.bgVideoEl, canvasController.el);
     canvasController.el.appendChild(layer.videoEl);
     /** 動画要素のドラッグ移動コールバック。ドラッグ量(dx, dy)を現在位置に加算して新しい位置を設定する */
     attachDrag(layer.videoEl, (dx, dy) => {
