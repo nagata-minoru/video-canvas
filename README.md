@@ -44,6 +44,14 @@ npm run build
 npm run preview
 ```
 
+## テストの実行
+
+```bash
+npm run test
+```
+
+[Vitest](https://vitest.dev/) を使用しています。`fit.ts` / `formatTime.ts` の純粋関数、および `controls.ts` のドラッグ&ドロップ時のハイライト表示ロジックをテストしています。
+
 ## 使い方
 
 1. 画面上部の「キャンバス」欄で幅・高さをピクセル単位で指定します。
