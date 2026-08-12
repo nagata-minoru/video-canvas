@@ -21,6 +21,7 @@ export function initControls(canvasController: CanvasController): void {
   const playPauseBtn = document.getElementById('play-pause') as HTMLButtonElement;
   const timeDisplay = document.getElementById('time-display') as HTMLSpanElement;
   const seekBar = document.getElementById('seek') as HTMLInputElement;
+  const stageEl = document.getElementById('stage') as HTMLElement;
 
   /** 現在キャンバスに配置されている動画レイヤー。動画未読み込み時はnull */
   let layer: VideoLayer | null = null;
@@ -71,13 +72,12 @@ export function initControls(canvasController: CanvasController): void {
   });
 
   /**
-   * ファイル選択inputのchangeイベントリスナ。選択された動画ファイルで既存レイヤーを置き換え、
-   * 新しいVideoLayerを生成してキャンバスへ追加し、ドラッグ操作・再生系イベントを結線する。
+   * 指定された動画ファイルで既存レイヤーを置き換える。新しいVideoLayerを生成してキャンバスへ追加し、
+   * ドラッグ操作・再生系イベントを結線したうえでファイルを読み込む。
+   * ファイル選択inputとドラッグ&ドロップの両方から共通で呼び出される。
+   * @param file 読み込む動画ファイル
    */
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
-
+  function loadVideoFile(file: File): void {
     layer?.destroy();
 
     layer = new VideoLayer({ w: canvasController.config.width, h: canvasController.config.height });
@@ -110,7 +110,44 @@ export function initControls(canvasController: CanvasController): void {
 
     resetPlaybackUI();
     layer.loadFile(file);
+  }
+
+  /** ファイル選択inputのchangeイベントリスナ。選択された動画ファイルを読み込む */
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    loadVideoFile(file);
   });
+
+  /** ステージ上でのdragoverイベントリスナ。既定のドロップ拒否動作を止め、ドロップを許可する */
+  stageEl.addEventListener('dragover', (e: DragEvent) => {
+    e.preventDefault();
+  });
+
+  /** ステージへのdragenterイベントリスナ。ドラッグ中であることを示すハイライト表示を付与する */
+  stageEl.addEventListener('dragenter', (e: DragEvent) => {
+    e.preventDefault();
+    stageEl.classList.add('drag-over');
+  });
+
+  /** ステージからのdragleaveイベントリスナ。ステージ外に出たらハイライト表示を解除する */
+  stageEl.addEventListener('dragleave', () => {
+    stageEl.classList.remove('drag-over');
+  });
+
+  /** ステージへのdropイベントリスナ。ドロップされた先頭のファイルが動画であれば読み込む */
+  stageEl.addEventListener('drop', (e: DragEvent) => {
+    e.preventDefault();
+    stageEl.classList.remove('drag-over');
+    const file = e.dataTransfer?.files?.[0];
+    if (!file || !file.type.startsWith('video/')) return;
+    loadVideoFile(file);
+  });
+
+  /** ページ全体へのdragoverイベントリスナ。ステージ外へのドロップでブラウザが遷移するのを防ぐ */
+  window.addEventListener('dragover', (e: DragEvent) => e.preventDefault());
+  /** ページ全体へのdropイベントリスナ。ステージ外へのドロップでブラウザがファイルを開いてしまうのを防ぐ */
+  window.addEventListener('drop', (e: DragEvent) => e.preventDefault());
 
   /** Fitモード選択欄のchangeイベントリスナ。選択されたフィットモードを動画レイヤーに適用する */
   fitModeSelect.addEventListener('change', () => {
