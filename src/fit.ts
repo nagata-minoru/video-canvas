@@ -54,6 +54,24 @@ export function computeCustomBox(natural: Size, canvas: Size): Box {
 }
 
 /**
+ * 中心基準(transform-origin: center center)でスケールした後の配置ボックスを計算する。
+ * <video>要素へのCSS transform: scale()による見た目と一致させるための純粋関数。
+ * @param box スケール適用前の配置ボックス(x, y, width, height)
+ * @param scale 拡大率
+ * @returns 中心を軸にスケールした後の配置ボックス
+ */
+export function computeCenterScaledBox(box: Box, scale: number): Box {
+  const width = box.width * scale;
+  const height = box.height * scale;
+  return {
+    x: box.x + box.width / 2 - width / 2,
+    y: box.y + box.height / 2 - height / 2,
+    width,
+    height,
+  };
+}
+
+/**
  * 指定されたフィットモードに応じた配置ボックスの計算関数を呼び分ける。
  * @param mode フィットモード('cover' | 'contain' | 'custom')
  * @param natural 動画本来のサイズ

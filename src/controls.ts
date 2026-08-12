@@ -2,14 +2,19 @@ import { CanvasController } from './canvas';
 import { VideoLayer } from './videoLayer';
 import { attachDrag } from './drag';
 import { formatTime } from './formatTime';
-import type { FitMode } from './types';
+import { CanvasExporter } from './exporter';
+import type { CanvasConfig, FitMode } from './types';
 
 /**
  * 画面上の全UIコントロール(キャンバスサイズ・動画追加・Fit・Scale・X/Y・再生系)を取得し、
  * VideoLayer/CanvasControllerへの結線を行う。DOM取得と状態管理・イベント購読をこの関数内に閉じ込める。
  * @param canvasController キャンバスのサイズ管理を行うコントローラ
+ * @param deps テスト用の差し替えポイント。createExporterを渡すとCanvasExporterの生成を差し替えられる
  */
-export function initControls(canvasController: CanvasController): void {
+export function initControls(
+  canvasController: CanvasController,
+  deps: { createExporter?: (config: CanvasConfig) => CanvasExporter } = {},
+): void {
   const canvasWidthInput = document.getElementById('canvas-width') as HTMLInputElement;
   const canvasHeightInput = document.getElementById('canvas-height') as HTMLInputElement;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -22,11 +27,19 @@ export function initControls(canvasController: CanvasController): void {
   const timeDisplay = document.getElementById('time-display') as HTMLSpanElement;
   const seekBar = document.getElementById('seek') as HTMLInputElement;
   const stageEl = document.getElementById('stage') as HTMLElement;
+  const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
+  const exportCancelBtn = document.getElementById('export-cancel-btn') as HTMLButtonElement;
+
+  const createExporter = deps.createExporter ?? ((config: CanvasConfig) => new CanvasExporter(config));
 
   /** 現在キャンバスに配置されている動画レイヤー。動画未読み込み時はnull */
   let layer: VideoLayer | null = null;
   /** シークバーをドラッグ操作中かどうか。trueの間はtimeupdateによるシークバー値の上書きを止める */
   let isSeeking = false;
+  /** エクスポート処理が進行中かどうか。trueの間はドラッグ&ドロップによる動画差し替えを禁止する */
+  let isExporting = false;
+  /** 進行中のエクスポートを中断するためのコントローラ。エクスポート中以外はnull */
+  let exportAbortController: AbortController | null = null;
 
   /**
    * layerのモデル値(scale, x, y)をScale/X/Yの各入力欄に反映する。
@@ -55,6 +68,34 @@ export function initControls(canvasController: CanvasController): void {
     seekBar.max = '0';
     seekBar.value = '0';
     updateTimeDisplay(0);
+  }
+
+  /**
+   * エクスポート中に操作されると録画のハングや座標系のズレを招くコントロール一式の有効/無効を切り替える。
+   * @param locked trueで一括disabledにしキャンセルボタンを表示、falseで解除して通常状態に戻す
+   */
+  function setExportLock(locked: boolean): void {
+    fileInput.disabled = locked;
+    canvasWidthInput.disabled = locked;
+    canvasHeightInput.disabled = locked;
+    playPauseBtn.disabled = locked;
+    seekBar.disabled = locked;
+    exportBtn.disabled = locked || !layer;
+    exportCancelBtn.hidden = !locked;
+  }
+
+  /**
+   * Blobを日時つきファイル名のWebMファイルとしてダウンロードさせる。
+   * @param blob ダウンロードさせる動画データ
+   */
+  function downloadBlob(blob: Blob): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
+    a.href = url;
+    a.download = `video-canvas-export-${timestamp}.webm`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   /** キャンバス幅入力欄のchangeイベントリスナ。キャンバス幅を更新し、動画レイヤーにも新しいキャンバスサイズを伝える */
@@ -109,6 +150,7 @@ export function initControls(canvasController: CanvasController): void {
     });
 
     resetPlaybackUI();
+    exportBtn.disabled = false;
     layer.loadFile(file);
   }
 
@@ -140,10 +182,14 @@ export function initControls(canvasController: CanvasController): void {
     stageEl.classList.remove('drag-over');
   });
 
-  /** ステージへのdropイベントリスナ。ドロップされた先頭のファイルが動画であれば読み込む */
+  /**
+   * ステージへのdropイベントリスナ。ドロップされた先頭のファイルが動画であれば読み込む。
+   * disabled属性と無関係に発火するイベントのため、エクスポート中は先頭で無視する。
+   */
   stageEl.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
     stageEl.classList.remove('drag-over');
+    if (isExporting) return;
     const file = e.dataTransfer?.files?.[0];
     if (!file || !file.type.startsWith('video/')) return;
     loadVideoFile(file);
@@ -195,6 +241,45 @@ export function initControls(canvasController: CanvasController): void {
   seekBar.addEventListener('change', () => {
     layer?.seekTo(Number(seekBar.value));
     isSeeking = false;
+  });
+
+  /** エクスポートボタンのclickイベントリスナ。現在の演出をWebM動画として録画しダウンロードさせる */
+  exportBtn.addEventListener('click', async () => {
+    if (!layer || isExporting) return;
+    const activeLayer = layer;
+
+    isExporting = true;
+    setExportLock(true);
+    exportAbortController = new AbortController();
+    const exporter = createExporter(canvasController.config);
+
+    /** エクスポート中のtimeupdateイベントリスナ。エクスポートボタンの文言を進捗表示に更新する */
+    const onProgress = () => {
+      const current = formatTime(activeLayer.videoEl.currentTime);
+      const duration = formatTime(activeLayer.videoEl.duration);
+      exportBtn.textContent = `エクスポート中... ${current} / ${duration}`;
+    };
+    activeLayer.videoEl.addEventListener('timeupdate', onProgress);
+
+    try {
+      const blob = await exporter.record(activeLayer.videoEl, () => activeLayer.model, exportAbortController.signal);
+      downloadBlob(blob);
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        alert(err instanceof Error ? err.message : 'エクスポートに失敗しました');
+      }
+    } finally {
+      activeLayer.videoEl.removeEventListener('timeupdate', onProgress);
+      isExporting = false;
+      exportAbortController = null;
+      exportBtn.textContent = 'エクスポート';
+      setExportLock(false);
+    }
+  });
+
+  /** キャンセルボタンのclickイベントリスナ。進行中のエクスポートを中断する */
+  exportCancelBtn.addEventListener('click', () => {
+    exportAbortController?.abort();
   });
 
   resetPlaybackUI();
