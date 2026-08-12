@@ -3,6 +3,7 @@ import { VideoLayer } from './videoLayer';
 import { attachDrag } from './drag';
 import { formatTime } from './formatTime';
 import { CanvasExporter, extensionForMimeType } from './exporter';
+import { CANVAS_PRESETS } from './presets';
 import type { CanvasConfig, FitMode } from './types';
 
 /**
@@ -17,6 +18,7 @@ export function initControls(
 ): void {
   const canvasWidthInput = document.getElementById('canvas-width') as HTMLInputElement;
   const canvasHeightInput = document.getElementById('canvas-height') as HTMLInputElement;
+  const canvasPresetSelect = document.getElementById('canvas-preset') as HTMLSelectElement;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
   const fitModeSelect = document.getElementById('fit-mode') as HTMLSelectElement;
   const scaleRange = document.getElementById('scale-range') as HTMLInputElement;
@@ -31,6 +33,19 @@ export function initControls(
   const exportCancelBtn = document.getElementById('export-cancel-btn') as HTMLButtonElement;
 
   const createExporter = deps.createExporter ?? ((config: CanvasConfig) => new CanvasExporter(config));
+
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = 'プリセットを選択...';
+  canvasPresetSelect.appendChild(placeholderOption);
+
+  /** プリセット一覧(CANVAS_PRESETS)を元に<option>を生成し、プリセット選択欄へ挿入する。valueは配列のインデックスをそのまま使う */
+  CANVAS_PRESETS.forEach((preset, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = preset.label;
+    canvasPresetSelect.appendChild(option);
+  });
 
   /** 現在キャンバスに配置されている動画レイヤー。動画未読み込み時はnull */
   let layer: VideoLayer | null = null;
@@ -78,6 +93,7 @@ export function initControls(
     fileInput.disabled = locked;
     canvasWidthInput.disabled = locked;
     canvasHeightInput.disabled = locked;
+    canvasPresetSelect.disabled = locked;
     playPauseBtn.disabled = locked;
     seekBar.disabled = locked;
     exportBtn.disabled = locked || !layer;
@@ -100,18 +116,35 @@ export function initControls(
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  /**
+   * キャンバスサイズを幅・高さ入力欄・CanvasController・動画レイヤーの三者へ一括反映する。
+   * 幅入力欄・高さ入力欄・プリセット選択欄、いずれの変更からも共通で呼ばれる。
+   * @param width 新しい幅(px)
+   * @param height 新しい高さ(px)
+   */
+  function applyCanvasSize(width: number, height: number): void {
+    canvasWidthInput.value = String(width);
+    canvasHeightInput.value = String(height);
+    canvasController.setSize(width, height);
+    layer?.setCanvasSize({ w: width, h: height });
+  }
+
   /** キャンバス幅入力欄のchangeイベントリスナ。キャンバス幅を更新し、動画レイヤーにも新しいキャンバスサイズを伝える */
   canvasWidthInput.addEventListener('change', () => {
-    const size = { width: Number(canvasWidthInput.value), height: canvasController.config.height };
-    canvasController.setSize(size.width, size.height);
-    layer?.setCanvasSize({ w: size.width, h: size.height });
+    applyCanvasSize(Number(canvasWidthInput.value), canvasController.config.height);
   });
 
   /** キャンバス高さ入力欄のchangeイベントリスナ。キャンバス高さを更新し、動画レイヤーにも新しいキャンバスサイズを伝える */
   canvasHeightInput.addEventListener('change', () => {
-    const size = { width: canvasController.config.width, height: Number(canvasHeightInput.value) };
-    canvasController.setSize(size.width, size.height);
-    layer?.setCanvasSize({ w: size.width, h: size.height });
+    applyCanvasSize(canvasController.config.width, Number(canvasHeightInput.value));
+  });
+
+  /** キャンバスプリセット選択欄のchangeイベントリスナ。選択されたプリセットのサイズを幅・高さ入力欄とキャンバスへ反映する */
+  canvasPresetSelect.addEventListener('change', () => {
+    if (canvasPresetSelect.value === '') return;
+    const preset = CANVAS_PRESETS[Number(canvasPresetSelect.value)];
+    if (!preset) return;
+    applyCanvasSize(preset.size.width, preset.size.height);
   });
 
   /**
