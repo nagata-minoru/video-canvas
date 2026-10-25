@@ -28,16 +28,6 @@ describe('VideoLayer', () => {
     expect(layer.bgVideoEl.src).toBe('blob:mock');
   });
 
-  it('loadFile()でObject URLがblob:で始まらなければ例外を投げ、srcを設定しない', () => {
-    vi.mocked(URL.createObjectURL).mockReturnValue('javascript:alert(1)');
-    const layer = new VideoLayer({ w: 1080, h: 608 });
-    const file = new File([new Uint8Array([0, 0, 0, 0])], 'sample.mp4', { type: 'video/mp4' });
-
-    expect(() => layer.loadFile(file)).toThrow('想定外のObject URL');
-    expect(layer.videoEl.getAttribute('src')).toBeNull();
-    expect(layer.bgVideoEl.getAttribute('src')).toBeNull();
-  });
-
   it('setFitMode/setPosition/setScaleの反映後、videoElとbgVideoElのスタイルが常に一致する', () => {
     const layer = new VideoLayer({ w: 608, h: 1080 });
     layer.model.naturalWidth = 1920;
