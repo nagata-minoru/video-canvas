@@ -53,14 +53,10 @@ export class VideoLayer {
    * 動画ファイルを読み込み、<video>要素のsrcにObject URLとして設定する。
    * 既存のObject URLがあれば解放してから差し替える。メタデータ取得後に自動でフィット計算を行う。
    * @param file 読み込むローカル動画ファイル
-   * @throws Object URLがblob:で始まらない場合
    */
   loadFile(file: File): void {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-    const url = URL.createObjectURL(file);
-    // <video>のsrcにはblob: URL以外を入れない(CodeQLのjs/xss-through-domへの対応)
-    if (!url.startsWith('blob:')) throw new Error(`想定外のObject URL: ${url}`);
-    this.objectUrl = url;
+    this.objectUrl = URL.createObjectURL(file);
     this.videoEl.src = this.objectUrl;
     this.bgVideoEl.src = this.objectUrl;
     /** loadedmetadataイベントのハンドラ。動画本来の解像度を取得し、開始位置を適用してフィットを再計算する */
